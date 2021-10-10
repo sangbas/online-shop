@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ import (
 
 var Version = "0.1.0"
 
-func main() {
+func Execute() {
 	logger := log.New().With(nil, "version", Version)
 
 	// load application configurations

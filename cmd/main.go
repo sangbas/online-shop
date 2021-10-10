@@ -7,8 +7,11 @@ import (
 	"github.com/online-shop/internal/config"
 	"github.com/online-shop/internal/errors"
 	"github.com/online-shop/internal/healthcheck"
+	"github.com/online-shop/internal/order"
+	"github.com/online-shop/internal/product"
 	"github.com/online-shop/pkg/accesslog"
 	"github.com/online-shop/pkg/log"
+	"github.com/online-shop/pkg/mysql"
 	"net/http"
 	"os"
 	"time"
@@ -41,7 +44,7 @@ func main() {
 	address := fmt.Sprintf(":%v", cfg.ServerPort)
 	hs := &http.Server{
 		Addr:    address,
-		Handler: buildHandler(logger, cfg, db),
+		Handler: buildHandler(logger, cfg, *db),
 	}
 
 	// start the HTTP server with graceful shutdown
@@ -54,7 +57,7 @@ func main() {
 }
 
 // buildHandler sets up the HTTP routing and builds an HTTP handler.
-func buildHandler(logger log.Logger, cfg *config.Config, db *sqlx.DB) http.Handler {
+func buildHandler(logger log.Logger, cfg *config.Config, db mysql.BaseRepository) http.Handler {
 	router := routing.New()
 
 	router.Use(
@@ -68,12 +71,17 @@ func buildHandler(logger log.Logger, cfg *config.Config, db *sqlx.DB) http.Handl
 
 	rg := router.Group("/v1")
 
-	//authHandler := auth.Handler(cfg.JWTSigningKey)
+	authHandler := auth.Handler(cfg.JWTSigningKey)
 
-	//album.RegisterHandlers(rg.Group(""),
-	//	album.NewService(album.NewRepository(db, logger), logger),
-	//	authHandler, logger,
-	//)
+	product.RegisterHandlers(rg.Group(""),
+		product.NewService(product.NewRepository(db, logger), logger),
+		authHandler, logger,
+	)
+
+	order.RegisterHandlers(rg.Group(""),
+		order.NewService(order.NewRepository(db, logger), logger),
+		authHandler, logger,
+	)
 
 	auth.RegisterHandlers(rg.Group(""),
 		auth.NewService(cfg.JWTSigningKey, cfg.JWTExpiration, logger),
@@ -83,10 +91,13 @@ func buildHandler(logger log.Logger, cfg *config.Config, db *sqlx.DB) http.Handl
 	return router
 }
 
-func buildMysqlClient(cfg *config.Config) (*sqlx.DB, error) {
+func buildMysqlClient(cfg *config.Config) (*mysql.BaseRepository, error) {
 	db, err := sqlx.Connect("mysql", cfg.DSN)
 	if err != nil {
-		return db, err
+		return nil, err
 	}
-	return db, nil
+	return &mysql.BaseRepository{
+		MasterDB: db,
+		SlaveDB:  db,
+	}, nil
 }

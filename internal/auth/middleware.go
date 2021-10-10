@@ -4,15 +4,16 @@ import (
 	"context"
 	"github.com/dgrijalva/jwt-go"
 	routing "github.com/go-ozzo/ozzo-routing/v2"
+	"github.com/go-ozzo/ozzo-routing/v2/auth"
 	"github.com/online-shop/internal/entity"
 	"github.com/online-shop/internal/errors"
 	"net/http"
 )
 
 // Handler returns a JWT-based authentication middleware.
-//func Handler(verificationKey string) routing.Handler {
-//	return auth.JWT(verificationKey, auth.JWTOptions{TokenHandler: handleToken})
-//}
+func Handler(verificationKey string) routing.Handler {
+	return auth.JWT(verificationKey, auth.JWTOptions{TokenHandler: handleToken})
+}
 
 // handleToken stores the user identity in the request context so that it can be accessed elsewhere.
 func handleToken(c *routing.Context, token *jwt.Token) error {

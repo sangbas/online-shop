@@ -15,7 +15,7 @@ const (
 // Config represents an application configuration.
 type Config struct {
 	// the server port. Defaults to 8080
-	ServerPort int `env:"SERVER_PORT"`
+	ServerPort int `env:"PORT"`
 	// the data source name (DSN) for connecting to the database. required.
 	DSN string `env:"DSN,secret"`
 	// JWT signing key. required.
@@ -36,7 +36,7 @@ func Load(logger log.Logger) (*Config, error) {
 		logger.Error("Error loading .env file")
 	}
 
-	c.ServerPort = getEnvAsInt("SERVER_PORT", defaultServerPort)
+	c.ServerPort = getEnvAsInt("PORT", defaultServerPort)
 	c.DSN = os.Getenv("DSN")
 	//secretKey := os.Getenv("SECRET_KEY")
 

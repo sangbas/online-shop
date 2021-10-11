@@ -3,6 +3,7 @@ package order
 import (
 	routing "github.com/go-ozzo/ozzo-routing/v2"
 	"github.com/online-shop/internal/errors"
+	"github.com/online-shop/internal/response"
 	"github.com/online-shop/pkg/log"
 	"net/http"
 )
@@ -52,10 +53,10 @@ func (r resource) updateOrder(c *routing.Context) error {
 		r.logger.With(c.Request.Context()).Info(err)
 		return errors.BadRequest("")
 	}
-	payment, err := r.service.UpdateOrder(c.Request.Context(), input)
+	_, err := r.service.UpdateOrder(c.Request.Context(), input)
 	if err != nil {
 		return err
 	}
 
-	return c.WriteWithStatus(payment, http.StatusOK)
+	return c.WriteWithStatus(response.SuccessResponse(), http.StatusOK)
 }

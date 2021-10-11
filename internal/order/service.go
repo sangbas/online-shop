@@ -20,7 +20,7 @@ const (
 
 type Service interface {
 	Get(ctx context.Context, id string) (OrderResponse, error)
-	PlaceOrder(ctx context.Context, input PlaceOrderRequest) (entity.Order, error)
+	PlaceOrder(ctx context.Context, input PlaceOrderRequest) (OrderResponse, error)
 	UpdateOrder(ctx context.Context, input UpdateOrderRequest) (entity.Order, error)
 }
 
@@ -48,7 +48,7 @@ type ItemResponse struct {
 
 type OrderResponse struct {
 	ID     string         `json:"id"`
-	UserID string         `json:"user_id`
+	UserID string         `json:"user_id"`
 	Status string         `json:"status"`
 	Amount float64        `json:"amount"`
 	Items  []ItemResponse `json:"items"`
@@ -88,7 +88,7 @@ func (s service) Get(ctx context.Context, id string) (OrderResponse, error) {
 	}, nil
 }
 
-func (s service) PlaceOrder(ctx context.Context, input PlaceOrderRequest) (entity.Order, error) {
+func (s service) PlaceOrder(ctx context.Context, input PlaceOrderRequest) (OrderResponse, error) {
 	var orderDetails []entity.OrderDetail
 	var total float64
 
@@ -101,7 +101,7 @@ func (s service) PlaceOrder(ctx context.Context, input PlaceOrderRequest) (entit
 			Price:     item.Price,
 			Quantity:  item.Quantity,
 		})
-		total += total + (item.Price * float64(item.Quantity))
+		total = total + (item.Price * float64(item.Quantity))
 	}
 
 	err := s.repo.PlaceOrder(ctx, entity.Order{
@@ -114,10 +114,10 @@ func (s service) PlaceOrder(ctx context.Context, input PlaceOrderRequest) (entit
 	})
 
 	if err != nil {
-		return entity.Order{}, err
+		return OrderResponse{}, err
 	}
 
-	return s.repo.Get(ctx, orderId)
+	return s.Get(ctx, orderId)
 }
 
 func (s service) UpdateOrder(ctx context.Context, input UpdateOrderRequest) (entity.Order, error) {

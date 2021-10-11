@@ -3,6 +3,7 @@ package auth
 import (
 	routing "github.com/go-ozzo/ozzo-routing/v2"
 	"github.com/online-shop/internal/errors"
+	"github.com/online-shop/internal/response"
 	"github.com/online-shop/pkg/log"
 	"net/http"
 )
@@ -49,7 +50,7 @@ func register(service Service, logger log.Logger) routing.Handler {
 			return err
 		}
 
-		return c.WriteWithStatus("", http.StatusCreated)
+		return c.WriteWithStatus(response.SuccessResponse(), http.StatusCreated)
 	}
 
 }

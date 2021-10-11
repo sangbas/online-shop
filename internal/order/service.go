@@ -9,17 +9,17 @@ import (
 )
 
 const (
-	WAITING_PAYMENT = "WAITING_FOR_PAYMENT"
-	SEND_PAYMENT    = "SEND_PAYMENT"
-	PAID            = "PAID"
-	DELIVERED       = "DELIVERED"
-	RECEIVED        = "RECEIVED"
-	CANCELLED       = "CANCELLED"
-	REJECTED        = "REJECTED"
+	CREATED   = "CREATED"
+	PAYMENT   = "PAYMENT"
+	VERIFIED  = "VERIFIED"
+	SHIPPED   = "SHIPPED"
+	RECEIVED  = "RECEIVED"
+	CANCELLED = "CANCELLED"
+	REJECTED  = "REJECTED"
 )
 
 type Service interface {
-	Get(ctx context.Context, id string) (entity.Order, error)
+	Get(ctx context.Context, id string) (OrderResponse, error)
 	PlaceOrder(ctx context.Context, input PlaceOrderRequest) (entity.Order, error)
 	UpdateOrder(ctx context.Context, input UpdateOrderRequest) (entity.Order, error)
 }
@@ -40,6 +40,20 @@ type UpdateOrderRequest struct {
 	Status  string `json:"status"`
 }
 
+type ItemResponse struct {
+	Name     string  `json:"name"`
+	Price    float64 `json:"price"`
+	Quantity int32   `json:"quantity"`
+}
+
+type OrderResponse struct {
+	ID     string         `json:"id"`
+	UserID string         `json:"user_id`
+	Status string         `json:"status"`
+	Amount float64        `json:"amount"`
+	Items  []ItemResponse `json:"items"`
+}
+
 type service struct {
 	repo   Repository
 	logger log.Logger
@@ -50,12 +64,28 @@ func NewService(repo Repository, logger log.Logger) Service {
 	return service{repo, logger}
 }
 
-func (s service) Get(ctx context.Context, id string) (entity.Order, error) {
-	order, err := s.repo.Get(ctx, id)
+func (s service) Get(ctx context.Context, id string) (OrderResponse, error) {
+	order, err := s.repo.GetCompleteOrder(ctx, id)
 	if err != nil {
-		return entity.Order{}, err
+		return OrderResponse{}, err
 	}
-	return order, nil
+
+	var items []ItemResponse
+	for _, item := range order {
+		items = append(items, ItemResponse{
+			Name:     item.ProductName,
+			Price:    item.Price,
+			Quantity: item.Quantity,
+		})
+	}
+
+	return OrderResponse{
+		ID:     order[0].ID,
+		UserID: order[0].UserID,
+		Status: order[0].Status,
+		Amount: order[0].Amount,
+		Items:  items,
+	}, nil
 }
 
 func (s service) PlaceOrder(ctx context.Context, input PlaceOrderRequest) (entity.Order, error) {
@@ -78,7 +108,7 @@ func (s service) PlaceOrder(ctx context.Context, input PlaceOrderRequest) (entit
 		ID:           orderId,
 		UserID:       user.GetID(),
 		AddressID:    input.ShippingAddress,
-		Status:       WAITING_PAYMENT,
+		Status:       CREATED,
 		Amount:       total,
 		OrderDetails: orderDetails,
 	})
@@ -87,7 +117,7 @@ func (s service) PlaceOrder(ctx context.Context, input PlaceOrderRequest) (entit
 		return entity.Order{}, err
 	}
 
-	return s.Get(ctx, orderId)
+	return s.repo.Get(ctx, orderId)
 }
 
 func (s service) UpdateOrder(ctx context.Context, input UpdateOrderRequest) (entity.Order, error) {
@@ -98,9 +128,9 @@ func (s service) UpdateOrder(ctx context.Context, input UpdateOrderRequest) (ent
 
 	now := time.Now()
 	switch status := input.Status; status {
-	case SEND_PAYMENT:
+	case PAYMENT:
 		order.PaymentDate = &now
-	case DELIVERED:
+	case SHIPPED:
 		order.DeliveredDate = &now
 	}
 	order.Status = input.Status

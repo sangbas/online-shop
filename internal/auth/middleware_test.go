@@ -16,13 +16,13 @@ func TestCurrentUser(t *testing.T) {
 	identity := CurrentUser(ctx)
 	if assert.NotNil(t, identity) {
 		assert.Equal(t, "100", identity.GetID())
-		assert.Equal(t, "test", identity.GetName())
+		assert.Equal(t, "test", identity.GetUsername())
 	}
 }
 
-//func TestHandler(t *testing.T) {
-//	assert.NotNil(t, Handler("test"))
-//}
+func TestHandler(t *testing.T) {
+	assert.NotNil(t, Handler("test"))
+}
 
 func Test_handleToken(t *testing.T) {
 	req, _ := http.NewRequest("GET", "http://example.com", nil)
@@ -39,7 +39,7 @@ func Test_handleToken(t *testing.T) {
 	identity := CurrentUser(ctx.Request.Context())
 	if assert.NotNil(t, identity) {
 		assert.Equal(t, "100", identity.GetID())
-		assert.Equal(t, "test", identity.GetName())
+		assert.Equal(t, "test", identity.GetUsername())
 	}
 }
 

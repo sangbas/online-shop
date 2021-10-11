@@ -10,6 +10,7 @@ func RegisterHandlers(r *routing.RouteGroup, service Service, authHandler routin
 	res := resource{service, logger}
 	r.Use(authHandler)
 
+	r.Get("/products", res.list)
 	r.Get("/products/<id>", res.get)
 }
 
@@ -20,6 +21,15 @@ type resource struct {
 
 func (r resource) get(c *routing.Context) error {
 	product, err := r.service.Get(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		return err
+	}
+
+	return c.Write(product)
+}
+
+func (r resource) list(c *routing.Context) error {
+	product, err := r.service.List(c.Request.Context())
 	if err != nil {
 		return err
 	}

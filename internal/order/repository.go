@@ -11,29 +11,47 @@ import (
 
 type Repository interface {
 	Get(ctx context.Context, id string) (entity.Order, error)
+	GetCompleteOrder(ctx context.Context, id string) ([]entity.CompleteOrder, error)
 	PlaceOrder(ctx context.Context, orderReq entity.Order) error
 	CreateOrder(ctx context.Context, order entity.Order) error
 	CreateOrderDetail(ctx context.Context, orderDetail entity.OrderDetail) error
 	UpdateOrder(ctx context.Context, order entity.Order) error
 }
 
-// repository persists albums in database
+// repository persists orders in database
 type repository struct {
 	db     mysql.BaseRepository
 	logger log.Logger
 }
 
-// NewRepository creates a new album repository
+// NewRepository creates a new orders repository
 func NewRepository(db mysql.BaseRepository, logger log.Logger) Repository {
 	return repository{db, logger}
 }
 
 func (r repository) Get(ctx context.Context, id string) (entity.Order, error) {
-	q := fmt.Sprintf("select * from orders where id = ?")
+	q := fmt.Sprintf("select * from orders o where id = ?")
 
 	var order entity.Order
 
 	err := r.db.FetchRow(ctx, q, &order, id)
+	if err != nil {
+		return order, err
+	}
+
+	return order, nil
+}
+
+func (r repository) GetCompleteOrder(ctx context.Context, id string) ([]entity.CompleteOrder, error) {
+	q := fmt.Sprintf("select o.id, user_id, address_id, order_date, payment_date, delivered_date, status, amount, p.name, quantity, od.price " +
+		"from orders o " +
+		"join order_detail od on o.id = od.order_id " +
+		"join product p on p.id = od.product_id " +
+		"where o.id = ?")
+
+	var order []entity.CompleteOrder
+
+	err := r.db.FetchRows(ctx, q, &order, id)
 	if err != nil {
 		return order, err
 	}

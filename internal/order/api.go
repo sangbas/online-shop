@@ -12,13 +12,23 @@ func RegisterHandlers(r *routing.RouteGroup, service Service, authHandler routin
 	res := resource{service, logger}
 	r.Use(authHandler)
 
-	r.Post("/order", res.placeOrder)
-	r.Put("/order", res.updateOrder)
+	r.Get("/orders/<id>", res.getOrder)
+	r.Post("/orders", res.placeOrder)
+	r.Put("/orders", res.updateOrder)
 }
 
 type resource struct {
 	service Service
 	logger  log.Logger
+}
+
+func (r resource) getOrder(c *routing.Context) error {
+	order, err := r.service.Get(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		return err
+	}
+
+	return c.Write(order)
 }
 
 func (r resource) placeOrder(c *routing.Context) error {

@@ -8,6 +8,7 @@ import (
 
 type Service interface {
 	Get(ctx context.Context, id string) (entity.Product, error)
+	List(ctx context.Context) ([]entity.Product, error)
 }
 
 type service struct {
@@ -26,4 +27,12 @@ func (s service) Get(ctx context.Context, id string) (entity.Product, error) {
 		return entity.Product{}, err
 	}
 	return product, nil
+}
+
+func (s service) List(ctx context.Context) ([]entity.Product, error) {
+	products, err := s.repo.List(ctx)
+	if err != nil {
+		return []entity.Product{}, err
+	}
+	return products, nil
 }
